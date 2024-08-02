@@ -1,14 +1,6 @@
-# import re
-# import sys
-
-
 # # Left to be implemented:
 # #     - read string (after echo and pipe or using EOF or simply entering text)
-# #     - -e option (add few arguments).
 # #     - -n \p option.
-
-
-
 import os
 import re
 import sys
@@ -18,22 +10,23 @@ def parse_arguments():
     Parses command-line arguments for a simplified sed utility.
 
     This function reads the command-line arguments provided to the script and
-    extracts the options, substitution pattern, file name, or input string. It ensures that
+    extracts the options, substitution patterns, file name, or input string. It ensures that
     the required arguments are present and in the correct format, otherwise it
     exits the program with an error message.
 
     The expected usage is:
-    python sed.py [-i] [-g] [-n] [-p] 's/old/new/flags' [file|string]
+    python sed.py [-i] [-g] [-n] [-p] [-e 's/old/new/flags']... [file|string]
 
     Options:
     -i : Edit files in place.
     -g : Global replacement (replace all occurrences).
     -n : Suppress automatic printing of pattern space.
     -p : Print the result to stdout.
+    -e : Allows for multiple substitution patterns.
 
     Returns:
         tuple: A tuple containing:
-            pattern (str): The substitution pattern in the format 's/old/new/flags'.
+            patterns (list): A list of substitution patterns in the format 's/old/new/flags'.
             input_source (str): The name of the file or the input string to apply the substitution.
             options (list): A list of options (e.g., ['-i', '-g']).
 
@@ -41,27 +34,39 @@ def parse_arguments():
         If the number of arguments is less than 3 or if the pattern or input source
         is not provided, it prints the usage message and exits the program.
     """
-    if len(sys.argv) < 3:
-        print("Usage: python (or python3) sed.py [-i] [-g] [-n] [-p] 's/old/new/flags' [file|string]")
-        sys.exit(1)
+    # if len(sys.argv) < 3:
+    #     print("Usage: python (or python3) sed.py [-i] [-g] [-n] [-p] [-e 's/old/new/flags']... [file|string]")
+    #     sys.exit(1)
     
     options = []
-    pattern = None
+    patterns = []
     input_source = None
 
-    for arg in sys.argv[1:]:
+    i = 1
+    while i < len(sys.argv):
+        arg = sys.argv[i]
         if arg.startswith('-'):
-            options.append(arg)
-        elif pattern is None:
-            pattern = arg
-        else:
+            if arg == '-e':
+                i += 1
+                if i < len(sys.argv):
+                    patterns.append(sys.argv[i])
+                else:
+                    print("Usage: python (or python3) sed.py [-i] [-g] [-n] [-p] [-e 's/old/new/flags']... [file|string]")
+                    sys.exit(1)
+            else:
+                options.append(arg)
+        elif input_source is None:
             input_source = arg
+        else:
+            print("Usage: python (or python3) sed.py [-i] [-g] [-n] [-p] [-e 's/old/new/flags']... [file|string]")
+            sys.exit(1)
+        i += 1
 
-    if not pattern or not input_source:
-        print("Usage: python (or python3) sed.py [-i] [-g] [-n] [-p] 's/old/new/flags' [file|string]")
+    if not patterns or not input_source:
+        print("Usage: python (or python3) sed.py [-i] [-g] [-n] [-p] [-e 's/old/new/flags']... [file|string]")
         sys.exit(1)
 
-    return pattern, input_source, options
+    return patterns, input_source, options
 
 def parse_pattern(pattern):
     """
@@ -83,7 +88,7 @@ def parse_pattern(pattern):
     match = re.match(r's/(.*)/(.*)/([gip]*)', pattern)
     if not match:
         raise ValueError("Invalid pattern format. Expected 's/old/new/flags'.")
-    old, new, flags = match.groups()
+    old, new, flags = match.groups() # Retrieves the groups from the match object.
     return old, new, flags
 
 def replace_text(old, new, text, flags):
@@ -104,7 +109,7 @@ def replace_text(old, new, text, flags):
     """
     re_flags = 0
     if 'i' in flags:
-        re_flags |= re.IGNORECASE
+        re_flags |= re.IGNORECASE # Using bitwise OR operation. Could also used re_flags = re.IGNORECASE but bitwiseOR is more scalable.
     if 'g' in flags:
         return re.sub(old, new, text, flags=re_flags)
     else:
@@ -149,16 +154,18 @@ def main():
     performs the text substitution, and either writes the result to the file or
     prints it to stdout based on the provided options.
     """
-    pattern, input_source, options = parse_arguments()
-    old, new, flags = parse_pattern(pattern)
+    patterns, input_source, options = parse_arguments()
     input_text = read_input(input_source)
-    result = replace_text(old, new, input_text, flags)
+
+    for pattern in patterns:
+        old, new, flags = parse_pattern(pattern)
+        input_text = replace_text(old, new, input_text, flags)
     
     if '-i' in options and os.path.isfile(input_source): # Verify that this is a file and not only a -i option.
-        write_output(input_source, result)
+        write_output(input_source, input_text)
 
     if '-p' in options or '-i' not in options:
-        sys.stdout.write(result)
+        sys.stdout.write(input_text)
 
 if __name__ == '__main__':
     main()

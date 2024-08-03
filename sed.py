@@ -34,9 +34,9 @@ def parse_arguments():
         If the number of arguments is less than 3 or if the pattern or input source
         is not provided, it prints the usage message and exits the program.
     """
-    # if len(sys.argv) < 3:
-    #     print("Usage: python (or python3) sed.py [-i] [-g] [-n] [-p] [-e 's/old/new/flags']... [file|string]")
-    #     sys.exit(1)
+    if len(sys.argv) < 3:
+        print("Usage: python (or python3) sed.py [-i] [-g] [-n] [-p] [-e 's/old/new/flags']... [file|string]")
+        sys.exit(1)
     
     options = []
     patterns = []

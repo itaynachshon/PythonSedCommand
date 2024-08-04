@@ -15,7 +15,7 @@ def parse_arguments():
     exits the program with an error message.
 
     The expected usage is:
-    python sed.py [-i] [-g] [-n] [-p] [-e 's/old/new/flags']... [file|string]
+    python sed.py [-i] [-g] [-n] [-p] [-e] ['s/old/new/flags']... [file|string]
 
     Options:
     -i : Edit files in place.
@@ -35,7 +35,7 @@ def parse_arguments():
         is not provided, it prints the usage message and exits the program.
     """
     if len(sys.argv) < 3:
-        print("Usage: python (or python3) sed.py [-i] [-g] [-n] [-p] [-e 's/old/new/flags']... [file|string]")
+        print("Usage: python (or python3) sed.py [-i] [-g] [-n] [-p] [-e] 's/old/new/flags']... [file|string]")
         sys.exit(1)
     
     options = []
@@ -46,24 +46,26 @@ def parse_arguments():
     while i < len(sys.argv):
         arg = sys.argv[i]
         if arg.startswith('-'):
-            if arg == '-e':
+            if arg == '-e': # parsing the following pattern after -e
                 i += 1
                 if i < len(sys.argv):
                     patterns.append(sys.argv[i])
                 else:
-                    print("Usage: python (or python3) sed.py [-i] [-g] [-n] [-p] [-e 's/old/new/flags']... [file|string]")
+                    print("Usage: python (or python3) sed.py [-i] [-g] [-n] [-p] [-e] 's/old/new/flags']... [file|string]")
                     sys.exit(1)
             else:
                 options.append(arg)
-        elif input_source is None:
+        elif arg.startswith('s/') and '/' in arg[2:]: # gets the pattern
+            patterns.append(arg)
+        elif input_source is None: # if didn't catch input_source yet and doesn't follow the other conditions- its an input_source
             input_source = arg
         else:
-            print("Usage: python (or python3) sed.py [-i] [-g] [-n] [-p] [-e 's/old/new/flags']... [file|string]")
+            print("Usage: python (or python3) sed.py [-i] [-g] [-n] [-p] [-e] 's/old/new/flags']... [file|string]")
             sys.exit(1)
         i += 1
 
     if not patterns or not input_source:
-        print("Usage: python (or python3) sed.py [-i] [-g] [-n] [-p] [-e 's/old/new/flags']... [file|string]")
+        print("Usage: python (or python3) sed.py [-i] [-g] [-n] [-p] [-e] 's/old/new/flags']... [file|string]")
         sys.exit(1)
 
     return patterns, input_source, options
@@ -85,10 +87,19 @@ def parse_pattern(pattern):
         tuple: A tuple containing the old text, the new text (that will replace the old one), 
                and the flags.
     """
-    match = re.match(r's/(.*)/(.*)/([gip]*)', pattern)
+    match = re.match(r's/(.*?)/(.*?)/([gip]*)/?$', pattern)
     if not match:
-        raise ValueError("Invalid pattern format. Expected 's/old/new/flags'.")
-    old, new, flags = match.groups() # Retrieves the groups from the match object.
+        # Split to 2 different errors in case of no matches:
+        if pattern.endswith('/'):
+            raise ValueError(f"python sed: 1: \"{pattern}\": bad flag in substitute command: '/'")
+        else:
+            raise ValueError(f"python sed: 1: \"{pattern}\": unterminated substitute in regular expression")
+    old, new, flags = match.groups()
+    # Verify the syntax of the regex (whether there is a '/' in the end of flags or the 'new' variable).
+    if flags and pattern[-1] == '/':
+        raise ValueError(f"python sed: 1: \"{pattern}\": bad flag in substitute command: '/'")
+    if not flags and pattern[-1] != '/':
+        raise ValueError(f"python sed: 1: \"{pattern}\": unterminated substitute in regular expression")
     return old, new, flags
 
 def replace_text(old, new, text, flags):
@@ -153,18 +164,30 @@ def main():
     This function parses command-line arguments, reads the input file or string,
     performs the text substitution, and either writes the result to the file or
     prints it to stdout based on the provided options.
+
+    Steps:
+    1. Parse command-line arguments to extract patterns, input source, and options.
+    2. Read the input text from the specified file or string.
+    3. Apply the text substitution patterns to the input text.
+    4. Write the modified text to the original file if the '-i' option is provided and the input source is a file.
+    5. Print the modified text to stdout if the '-p' option is provided, or if the '-i' option is not provided or the input source is not a file.
     """
     patterns, input_source, options = parse_arguments()
     input_text = read_input(input_source)
 
     for pattern in patterns:
-        old, new, flags = parse_pattern(pattern)
-        input_text = replace_text(old, new, input_text, flags)
+        try:
+            old, new, flags = parse_pattern(pattern)
+            input_text = replace_text(old, new, input_text, flags)
+        except ValueError as e:
+            sys.stderr.write(str(e) + '\n')
+            sys.exit(1)
     
-    if '-i' in options and os.path.isfile(input_source): # Verify that this is a file and not only a -i option.
+    is_file = os.path.isfile(input_source)
+    if '-i' in options and is_file:
         write_output(input_source, input_text)
 
-    if '-p' in options or '-i' not in options:
+    if '-p' in options or '-i' not in options or not is_file:
         sys.stdout.write(input_text)
 
 if __name__ == '__main__':

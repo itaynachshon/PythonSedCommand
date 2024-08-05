@@ -1,7 +1,3 @@
-# # Left to be implemented:
-# #     - read string (after echo and pipe or using EOF or simply entering text)
-# #     - -n \p option.
-# #     - -f add script file.
 import os
 import re
 import sys
@@ -16,7 +12,7 @@ def parse_arguments():
     exits the program with an error message.
 
     The expected usage is:
-    python sed.py [-i] [-g] [-n] [-p] [-e] ['s/old/new/flags']... [file|string]
+    python sed.py [-i] [-g] [-n] [-p] [-e] [-f scriptfile] ['s/old/new/flags']... [file|string]
 
     Options:
     -i : Edit files in place.
@@ -24,6 +20,7 @@ def parse_arguments():
     -n : Suppress automatic printing of pattern space.
     -p : Print the result to stdout.
     -e : Allows for multiple substitution patterns.
+    -f : Read patterns from a file.
 
     Returns:
         tuple: A tuple containing:
@@ -36,7 +33,7 @@ def parse_arguments():
         is not provided, it prints the usage message and exits the program.
     """
     if len(sys.argv) < 3:
-        print("Usage: python (or python3) sed.py [-i] [-g] [-n] [-p] [-e] 's/old/new/flags']... [file|string]")
+        print("Usage: python (or python3) sed.py [-i] [-g] [-n] [-p] [-e] [-f scriptfile] 's/old/new/flags']... [file|string]")
         sys.exit(1)
     
     options = []
@@ -52,7 +49,20 @@ def parse_arguments():
                 if i < len(sys.argv):
                     patterns.append(sys.argv[i])
                 else:
-                    print("Usage: python (or python3) sed.py [-i] [-g] [-n] [-p] [-e] 's/old/new/flags']... [file|string]")
+                    print("Usage: python (or python3) sed.py [-i] [-g] [-n] [-p] [-e] [-f scriptfile] 's/old/new/flags']... [file|string]")
+                    sys.exit(1)
+            elif arg == '-f':  # parsing patterns from a file after -f
+                i += 1
+                if i < len(sys.argv):
+                    script_file = sys.argv[i]
+                    if os.path.isfile(script_file): # verify that this is a file and parse the patterns
+                        with open(script_file, 'r') as f:
+                            patterns.extend([line.strip() for line in f if line.strip()])
+                    else:
+                        print(f"python sed: {script_file}: No such file or directory")
+                        sys.exit(1)
+                else:
+                    print("Usage: python (or python3) sed.py [-i] [-g] [-n] [-p] [-e] [-f scriptfile] 's/old/new/flags']... [file|string]")
                     sys.exit(1)
             else:
                 options.append(arg)
@@ -61,12 +71,12 @@ def parse_arguments():
         elif input_source is None:  # if didn't catch input_source yet and doesn't follow the other conditions- its an input_source
             input_source = arg
         else:
-            print("Usage: python (or python3) sed.py [-i] [-g] [-n] [-p] [-e] 's/old/new/flags']... [file|string]")
+            print("Usage: python (or python3) sed.py [-i] [-g] [-n] [-p] [-e] [-f scriptfile] 's/old/new/flags']... [file|string]")
             sys.exit(1)
         i += 1
 
     if not patterns or not input_source:
-        print("Usage: python (or python3) sed.py [-i] [-g] [-n] [-p] [-e] 's/old/new/flags']... [file|string]")
+        print("Usage: python (or python3) sed.py [-i] [-g] [-n] [-p] [-e] [-f scriptfile] 's/old/new/flags']... [file|string]")
         sys.exit(1)
 
     return patterns, input_source, options

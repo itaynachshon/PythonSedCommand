@@ -1,6 +1,7 @@
 # # Left to be implemented:
 # #     - read string (after echo and pipe or using EOF or simply entering text)
 # #     - -n \p option.
+# #     - -f add script file.
 import os
 import re
 import sys
@@ -46,7 +47,7 @@ def parse_arguments():
     while i < len(sys.argv):
         arg = sys.argv[i]
         if arg.startswith('-'):
-            if arg == '-e': # parsing the following pattern after -e
+            if arg == '-e':  # parsing the following pattern after -e
                 i += 1
                 if i < len(sys.argv):
                     patterns.append(sys.argv[i])
@@ -55,9 +56,9 @@ def parse_arguments():
                     sys.exit(1)
             else:
                 options.append(arg)
-        elif arg.startswith('s/') and '/' in arg[2:]: # gets the pattern
+        elif arg.startswith('s/') and '/' in arg[2:]:  # gets the pattern
             patterns.append(arg)
-        elif input_source is None: # if didn't catch input_source yet and doesn't follow the other conditions- its an input_source
+        elif input_source is None:  # if didn't catch input_source yet and doesn't follow the other conditions- its an input_source
             input_source = arg
         else:
             print("Usage: python (or python3) sed.py [-i] [-g] [-n] [-p] [-e] 's/old/new/flags']... [file|string]")
@@ -175,20 +176,36 @@ def main():
     patterns, input_source, options = parse_arguments()
     input_text = read_input(input_source)
 
-    for pattern in patterns:
-        try:
-            old, new, flags = parse_pattern(pattern)
-            input_text = replace_text(old, new, input_text, flags)
-        except ValueError as e:
-            sys.stderr.write(str(e) + '\n')
-            sys.exit(1)
-    
+    output_lines = []
+    print_lines = '-n' not in options  # Suppress printing if -n is specified
+
+    for line in input_text.splitlines(keepends=True):
+        original_line = line
+        modified_line = line
+        to_print = False
+        for pattern in patterns:
+            try:
+                old, new, flags = parse_pattern(pattern)
+                modified_line = replace_text(old, new, modified_line, flags)
+                if 'p' in flags and line != modified_line:
+                    to_print = True
+            except ValueError as e:
+                sys.stderr.write(str(e) + '\n')
+                sys.exit(1)
+
+        if print_lines:
+            output_lines.append(modified_line)
+        elif to_print:
+            output_lines.append(modified_line)
+
+    output_text = ''.join(output_lines)
+
     is_file = os.path.isfile(input_source)
     if '-i' in options and is_file:
-        write_output(input_source, input_text)
+        write_output(input_source, output_text)
 
     if '-p' in options or '-i' not in options or not is_file:
-        sys.stdout.write(input_text)
+        sys.stdout.write(output_text)
 
 if __name__ == '__main__':
     main()

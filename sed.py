@@ -149,9 +149,7 @@ def read_input(input_source):
     Returns:
         str: The content of the file or the input string.
     """
-    if input_source == '-':
-        return sys.stdin.read()
-    elif os.path.isfile(input_source):
+    if os.path.isfile(input_source):
         with open(input_source, 'r') as f:
             return f.read()
     else:
@@ -202,9 +200,7 @@ def main():
                 sys.stderr.write(str(e) + '\n')
                 sys.exit(1)
 
-        if print_lines:
-            output_lines.append(modified_line)
-        elif to_print:
+        if print_lines or to_print:
             output_lines.append(modified_line)
 
     output_text = ''.join(output_lines)

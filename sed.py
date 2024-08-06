@@ -190,7 +190,6 @@ def main():
     print_lines = '-n' not in options  # Suppress printing if -n is specified
 
     for line in input_text.splitlines(keepends=True):
-        original_line = line
         modified_line = line
         to_print = False
         for pattern in patterns:

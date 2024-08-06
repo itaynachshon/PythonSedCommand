@@ -1,87 +1,67 @@
 
-# Simplified `sed` Utility
+# Simplified `sed` Command in Python
 
-## Description
-
-This project implements a simplified version of the `sed` utility in Python. It allows for basic text substitution operations similar to those provided by the Unix `sed` command.
-
-## Features
-
-- **In-place editing**: Modify files directly.
-- **Global replacement**: Replace all occurrences of a pattern.
-- **Suppress automatic printing**: Control the output of the pattern space.
-- **Print result**: Output the result to standard output.
-- **Multiple substitution patterns**: Apply multiple substitution patterns in a single command.
+This project implements a simplified version of the `sed` command, focusing on the substitution feature (`s/old/new/flags`). The script processes text by performing search-and-replace operations based on the provided patterns.
 
 ## Usage
 
-The script can be run using the following command:
+```sh
+python sed.py [-i] [-g] [-n] [-p] [-e] [-f scriptfile] 's/old/new/flags'... [file|string]
+```
 
-\`\`\`bash
-python sed.py [-i] [-g] [-n] [-p] [-e 's/old/new/flags']... [file|string]
-\`\`\`
+## Options
 
-### Options:
+- `-i` : Edit files in place.
+- `-g` : Global replacement (replace all occurrences).
+- `-n` : Suppress automatic printing of the pattern space.
+- `-p` : Print the result to stdout.
+- `-e` : Allows for multiple substitution patterns.
+- `-f` : Read patterns from a file.
 
-- \`-i\`: Edit files in place.
-- \`-g\`: Global replacement (replace all occurrences).
-- \`-n\`: Suppress automatic printing of pattern space.
-- \`-p\`: Print the result to stdout.
-- \`-e\`: Allows for multiple substitution patterns.
+## Arguments
 
-### Example:
-
-\`\`\`bash
-python sed.py -i -e 's/old/new/g' -e 's/foo/bar/i' input.txt
-\`\`\`
-
-## Installation
-
-1. Clone the repository:
-
-\`\`\`bash
-git clone <repository-url>
-cd <repository-directory>
-\`\`\`
-
-2. Ensure you have Python installed (Python 3.x is recommended).
-
-## How to Run
-
-1. Open your terminal or command prompt.
-2. Navigate to the directory where \`sed.py\` is located.
-3. Execute the script with the desired options and arguments as shown in the usage section.
+- `patterns` : One or more substitution patterns in the format `'s/old/new/flags'`.
+- `file|string` : The file or input string to apply the substitution.
 
 ## Functions
 
-- \`parse_arguments()\`: Parses command-line arguments.
-- \`parse_pattern(pattern)\`: Parses the substitution pattern.
-- \`replace_text(old, new, text, flags)\`: Replaces occurrences of a substring in a given text with a new substring.
-- \`read_input(input_source)\`: Reads input from a file or directly from a provided string.
-- \`write_output(file, content)\`: Writes the given content to a file.
-- \`main()\`: Main function to execute the sed-like utility.
+### `parse_arguments()`
 
-## Left to be Implemented:
+Parses command-line arguments and extracts options, patterns, and input sources.
 
-- Read string (after echo and pipe or using EOF or simply entering text).
-- Implement \`-n\` and \`-p\` options.
+### `parse_pattern(pattern)`
 
-## License
+Parses a substitution pattern in the format `'s/old/new/flags'`.
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+### `replace_text(old, new, text, flags)`
 
-## Contributing
+Replaces occurrences of a substring in a given text with a new substring, with optional case-insensitive and global replacement.
 
-1. Fork the repository.
-2. Create a new branch (\`git checkout -b feature-branch\`).
-3. Commit your changes (\`git commit -am 'Add new feature'\`).
-4. Push to the branch (\`git push origin feature-branch\`).
-5. Create a new Pull Request.
+### `read_input(input_source)`
 
-## Contact
+Reads input from a file or directly from a provided string.
 
-For any questions or suggestions, please open an issue in the repository.
+### `write_output(file, content)`
 
----
+Writes the given content to a file.
 
-This README provides an overview of the project, its usage, and how to contribute. For more detailed information, refer to the function docstrings in the \`sed.py\` file.
+### `main()`
+
+Main function to execute the sed-like utility:
+1. Parses command-line arguments.
+2. Reads the input text from the specified file or string.
+3. Applies the text substitution patterns to the input text.
+4. Writes the modified text to the original file if the `-i` option is provided and the input source is a file.
+5. Prints the modified text to stdout if the `-p` option is provided, or if the `-i` option is not provided or the input source is not a file.
+
+## Example
+
+```sh
+python sed.py -i 's/foo/bar/g' input.txt
+```
+
+This command will replace all occurrences of `foo` with `bar` in `input.txt` and save the changes in place.
+
+## Author
+
+[Itay Nachshon]

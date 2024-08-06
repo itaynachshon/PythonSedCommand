@@ -164,5 +164,5 @@ cython_debug/
 
 # Other files:
 example.txt
-test.txt
+test*
 script*
